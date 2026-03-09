@@ -95,7 +95,7 @@
         <h2>AEGIS CORE</h2>
         <p class="subtitle">ZERO-TRUST NEURAL GATEWAY</p>
 
-        <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { localStorage.setItem('aegisAdminAuth', 'true'); window.location.href = 'dashboard.html' } else { loading = false; error = true; $refs.pass.value = ''; } }, 1800)">
+        <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { localStorage.setItem('aegisAdminAuth', 'true'); window.location.href = 'dash.html' } else { loading = false; error = true; $refs.pass.value = ''; } }, 1800)">
             
             <div class="input-group">
                 <label class="input-label">OPERATOR_ID</label>
