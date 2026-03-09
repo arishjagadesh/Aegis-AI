@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aegis | Neural Gateway</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="style.css" rel="stylesheet">
+    <style>
+        body { background: #0F172A; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif; }
+        .login-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 50px; border-radius: 30px; width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .scanner-line { width: 100%; height: 2px; background: #3C50E0; position: absolute; top: 0; left: 0; animation: scan 3s infinite linear; box-shadow: 0 0 15px #3C50E0; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .input-field { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 12px; width: 100%; margin-bottom: 20px; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: #3C50E0; box-shadow: 0 0 10px rgba(60, 80, 224, 0.3); }
+        .login-btn { background: #3C50E0; color: white; width: 100%; padding: 15px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; transition: 0.3s; }
+        .login-btn:hover { background: #2563EB; transform: translateY(-2px); }
+    </style>
+</head>
+<body x-data="{ loading: false, error: false }">
+    <div class="login-card">
+        <div style="position: relative; height: 80px; width: 80px; margin: 0 auto 30px; background: #1E293B; border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid #3C50E0; overflow: hidden;">
+            <div class="scanner-line"></div>
+            <span style="font-size: 32px; font-weight: 900; color: white;">AJ</span>
+        </div>
+        
+        <h2 style="color: white; font-size: 24px; font-weight: 900; margin-bottom: 10px;">NEURAL ACCESS</h2>
+        <p style="color: #64748B; font-size: 14px; margin-bottom: 30px;">Identify yourself to access the Aegis Core.</p>
+
+        <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { window.location.href = 'dash.html' } else { loading = false; error = true; } }, 2000)">
+            <input type="text" placeholder="Operator ID" class="input-field" required value="Admin" readonly>
+            <input type="password" x-ref="pass" placeholder="Security Key" class="input-field" required>
+            
+            <p x-show="error" style="color: #EF4444; font-size: 12px; margin-bottom: 15px; font-weight: 700;">ACCESS DENIED: INVALID KEY</p>
+
+            <button type="submit" class="login-btn">
+                <template x-if="!loading"><span>🔓 AUTHORIZE ACCESS</span></template>
+                <template x-if="loading"><span>⏳ DECRYPTING...</span></template>
+            </button>
+        </form>
+        
+        <p style="margin-top: 30px; font-size: 10px; color: #475569; letter-spacing: 2px; font-weight: 800;">PROTECTED BY DEBERTA-V3 NEURAL ENGINE</p>
+    </div>
+</body>
+</html>

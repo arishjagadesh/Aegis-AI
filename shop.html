@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJ Store | Neural Tech Console</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap');
+        body { background-color: #f1f3f6; font-family: 'Plus Jakarta Sans', sans-serif; color: #1a202c; overflow: hidden; }
+
+        /* Left Sidebar Items */
+        .sidebar-node { background: white; border-radius: 12px; transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .sidebar-node:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .node-active { border-color: #2874f0 !important; background: #eff6ff !important; }
+
+        /* Config & Thumbnails */
+        .config-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; }
+        .config-active { border-color: #fb641b; background: #fffaf0; box-shadow: 0 0 0 1px #fb641b; }
+        .thumb-active { border-color: #2874f0 !important; box-shadow: 0 0 0 2px rgba(40,116,240,0.3); }
+
+        /* Buttons & Inputs */
+        .btn-elite { background: linear-gradient(135deg, #fb641b 0%, #ff8c00 100%); transition: 0.2s; color: white; font-weight: 800; border-radius: 8px; }
+        .secure-input { letter-spacing: 0.8em; text-align: center; font-weight: 900; color: #10B981; }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body x-data="shopSystem()" x-init="fetchGlobalReviews()" class="h-screen flex flex-col">
+
+    <header class="bg-blue-600 text-white h-14 flex items-center px-6 justify-between shadow-md z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="bg-white text-blue-600 h-8 w-8 rounded flex items-center justify-center font-black text-lg">A</div>
+            <span class="font-black tracking-tight text-xl uppercase">AJ Store</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-[10px] font-bold text-blue-100 bg-blue-800 px-4 py-1.5 rounded-full uppercase tracking-widest shadow-inner">
+                Operator: Arish Jagadesh | Terminal Active
+            </span>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <div class="w-1/5 min-w-[250px] bg-white border-r border-gray-200 h-full overflow-y-auto custom-scroll z-10 shadow-lg">
+            <div class="p-5 bg-gray-50 border-b border-gray-200 font-black text-xs text-gray-500 uppercase tracking-widest sticky top-0 z-10">
+                Hardware Inventory
+            </div>
+            <div class="p-3 space-y-2">
+                <template x-for="product in products" :key="product.name">
+                    <div @click="selectProduct(product)" 
+                         :class="selectedProduct.name === product.name ? 'node-active shadow-sm' : ''"
+                         class="sidebar-node p-4 flex flex-col items-center gap-3 border border-gray-100 text-center">
+                        <div class="h-20 w-20 bg-white rounded-lg flex items-center justify-center p-1 border border-gray-100 shrink-0">
+                            <img :src="product.images[0]" class="h-full w-full object-contain rounded">
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xs text-gray-800 leading-tight" x-text="product.name"></h3>
+                            <p class="text-blue-600 font-extrabold text-sm mt-1" x-text="'₹' + product.basePrice.toLocaleString()"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="w-1/2 flex-1 bg-white h-full overflow-y-auto custom-scroll relative border-r border-gray-200">
+            
+            <template x-if="!selectedProduct.name">
+                <div class="h-full flex flex-col items-center justify-center text-gray-300">
+                    <span class="text-8xl mb-6 opacity-30">📦</span>
+                    <p class="font-black uppercase tracking-[0.3em] text-sm">Select Node to Provision</p>
+                </div>
+            </template>
+
+            <div x-show="selectedProduct.name" class="p-10 max-w-2xl mx-auto" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4">
+                
+                <h1 class="text-4xl font-black text-gray-900 mb-3 tracking-tight" x-text="selectedProduct.name"></h1>
+                <div class="flex items-center gap-3 mb-8">
+                    <span class="bg-green-600 text-white px-2 py-0.5 rounded text-[11px] font-bold shadow-sm">4.8 ★</span>
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest">Aegis Protected</span>
+                </div>
+                
+                <div class="w-full h-80 bg-gray-50 border border-gray-100 rounded-3xl p-6 flex justify-center items-center mb-6 shadow-inner">
+                    <img :src="activeImage" :key="activeImage" class="max-h-full object-contain hover:scale-105 transition-transform duration-500">
+                </div>
+
+                <div class="flex gap-3 justify-center mb-8">
+                    <template x-for="(img, index) in selectedProduct.images" :key="index">
+                        <div @click="activeImage = img"
+                             :class="activeImage === img ? 'thumb-active' : 'border-gray-200 hover:border-blue-300'"
+                             class="w-16 h-16 border-2 rounded-lg p-1 cursor-pointer bg-white transition">
+                            <img :src="img" class="h-full w-full object-contain rounded">
+                        </div>
+                    </template>
+                </div>
+                
+                <p class="text-gray-500 text-base leading-relaxed mb-8 border-l-4 border-blue-500 pl-4" x-text="selectedProduct.fullDesc"></p>
+
+                <div class="mb-8">
+                    <div class="flex items-end gap-3 mb-1">
+                        <p class="text-red-600 text-2xl font-light">-15%</p>
+                        <p class="text-4xl font-black text-gray-900" x-text="'₹' + currentPrice.toLocaleString()"></p>
+                    </div>
+                    <p class="text-gray-400 text-sm font-semibold">M.R.P: <span class="line-through" x-text="'₹' + currentMrp.toLocaleString()"></span></p>
+                </div>
+
+                <div class="mb-10">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Memory Configuration</p>
+                    <div class="flex gap-3">
+                        <template x-for="opt in configs">
+                            <div @click="selectedConfig = opt.size; updatePricing(opt.add)" 
+                                 :class="selectedConfig === opt.size ? 'config-active' : ''"
+                                 class="config-box flex-1 text-center shadow-sm">
+                                <b class="text-sm block text-gray-800" x-text="opt.size"></b>
+                                <span class="text-[10px] text-gray-500 font-bold" x-text="opt.add === 0 ? 'Standard' : '+ ₹' + opt.add.toLocaleString()"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200 text-center">
+                    <p class="text-green-700 font-bold mb-4 flex items-center justify-center gap-2">
+                        <span class="h-2 w-2 bg-green-600 rounded-full animate-ping"></span> In Stock & Ready to Ship
+                    </p>
+                    <button @click="modal = 'buy'" class="btn-elite w-full py-4 text-sm font-black uppercase tracking-wider rounded-xl shadow-md hover:-translate-y-1 active:scale-95 transition">Secure With Master Code</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-[30%] min-w-[350px] col-right h-full flex flex-col relative bg-[#f8fafc]">
+            
+            <div class="p-6 border-b border-gray-200 bg-white shrink-0 flex justify-between items-center shadow-sm z-10">
+                <div>
+                    <h3 class="text-lg font-black text-gray-900 uppercase tracking-tight">Verified Feed</h3>
+                </div>
+                <button @click="modal = 'review'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs transition shadow-md">+ Submit Trace</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scroll">
+                
+                <template x-if="!selectedProduct.name">
+                    <div class="text-center mt-10">
+                        <p class="text-gray-400 text-xs font-bold uppercase tracking-widest italic">Select a hardware node to view telemetry.</p>
+                    </div>
+                </template>
+
+                <template x-if="selectedProduct.name">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Feedback for: <span class="text-blue-600" x-text="selectedProduct.name"></span></p>
+                        
+                        <div class="space-y-4">
+                            <template x-for="rev in filteredReviews()">
+                                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative transition hover:shadow-md">
+                                    <div class="absolute top-0 right-0 px-3 py-1 bg-green-50 text-green-700 text-[9px] font-black uppercase rounded-bl-lg border-b border-l border-green-100" x-show="rev.status === 'Verified'">Aegis Validated</div>
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs" x-text="rev.email[0].toUpperCase()"></div>
+                                        <div>
+                                            <p class="text-xs font-bold text-gray-900" x-text="rev.email"></p>
+                                            <p class="text-[9px] font-mono text-gray-400" x-text="'Ref: #' + rev.order_id"></p>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 text-sm italic font-medium leading-relaxed" x-text="'“' + rev.text + '”'"></p>
+                                </div>
+                            </template>
+                            
+                            <template x-if="filteredReviews().length === 0">
+                                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+                                    <p class="text-gray-400 font-bold text-xs uppercase tracking-widest">0 Traces Indexed</p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div x-show="modal === 'buy'" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" x-cloak x-transition>
+        <div class="bg-white w-full max-w-sm p-10 rounded-[32px] shadow-2xl">
+            <h2 class="text-2xl font-black text-center mb-8 uppercase text-gray-800">Secure Provision</h2>
+            <div class="space-y-5">
+                <input type="email" x-model="custEmail" placeholder="Gmail for Token Delivery" class="w-full p-4 rounded-xl bg-gray-50 border outline-none font-semibold text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <input type="password" x-model="masterCode" placeholder="••••••••" class="w-full p-4 rounded-xl bg-gray-50 border secure-input outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            </div>
+            
+            <button @click="processPurchase()" 
+                    :disabled="isProcessingBuy"
+                    :class="isProcessingBuy ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-1 active:scale-95'"
+                    class="w-full mt-8 py-4 btn-elite text-sm tracking-widest shadow-xl transition">
+                <span x-show="!isProcessingBuy">AUTHORIZE</span>
+                <span x-show="isProcessingBuy">PROCESSING... ⏳</span>
+            </button>
+            
+            <button @click="modal = null" class="w-full mt-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-red-500 transition">Abort Protocol</button>
+        </div>
+    </div>
+
+    <div x-show="modal === 'review'" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" x-cloak x-transition>
+        <div class="bg-white w-full max-w-lg p-10 rounded-[32px] shadow-2xl border-t-[8px] border-blue-600">
+            <h2 class="text-3xl font-black text-center mb-2 uppercase text-gray-900">Neural Feedback</h2>
+            <p class="text-center text-gray-500 text-xs mb-8 font-semibold" x-text="selectedProduct.name ? 'Validating for: ' + selectedProduct.name : 'No product selected.'"></p>
+            <div class="space-y-4">
+                <input type="text" x-model="reviewToken" placeholder="Enter PRTC Token" class="w-full p-4 rounded-xl bg-gray-50 font-mono text-sm border outline-none focus:border-blue-500">
+                <textarea x-model="reviewText" rows="5" placeholder="System will analyze your feedback..." class="w-full p-4 rounded-xl bg-gray-50 border text-sm font-medium outline-none focus:border-blue-500"></textarea>
+            </div>
+
+            <button @click="submitReview()" 
+                    :disabled="isProcessingReview"
+                    :class="isProcessingReview ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 active:scale-95'"
+                    class="w-full mt-8 py-4 bg-blue-600 transition text-white font-black rounded-xl shadow-lg uppercase tracking-widest">
+                <span x-show="!isProcessingReview">Validate & Submit</span>
+                <span x-show="isProcessingReview">PROCESSING... ⏳</span>
+            </button>
+
+            <button @click="modal = null" class="w-full mt-4 text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-red-500 transition">Close Terminal</button>
+        </div>
+    </div>
+
+    <script>
+       const API = "https://additional-overtrustfully-bernadine.ngrok-free.dev";
+        function shopSystem() {
+            return {
+                modal: null,
+                selectedProduct: {},
+                activeImage: '',
+                selectedConfig: '256 GB',
+                currentPrice: 0,
+                currentMrp: 0,
+                allReviews: [],
+                custEmail: '',
+                masterCode: '',
+                reviewToken: '',
+                reviewText: '',
+
+                // NEW: Lock flags to prevent double-clicking
+                isProcessingBuy: false,
+                isProcessingReview: false,
+
+                configs: [{ size: '256 GB', add: 0 }, { size: '512 GB', add: 15000 }, { size: '1 TB', add: 35000 }],
+                
+                products: [
+                    { 
+                        name: 'iPhone 15 Pro Max', 
+                        basePrice: 159900, 
+                        baseMrp: 199900, 
+                        fullDesc: 'Forged in titanium and featuring the groundbreaking A17 Pro chip. The ultimate flagship experience.', 
+                        images: [
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/Iphone%2015%20side.webp',
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/iphone%2015.webp'
+                        ] 
+                    },
+                    { 
+                        name: 'MacBook Pro M3 Max', 
+                        basePrice: 349900, 
+                        baseMrp: 399900, 
+                        fullDesc: 'Mind-blowing performance for developers. Features a stunning 14-inch Liquid Retina XDR display.', 
+                        images: [
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/Macbook.webp',
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/macbook%20side.webp'
+                        ] 
+                    },
+                    { 
+                        name: 'Samsung S24 Ultra', 
+                        basePrice: 129900, 
+                        baseMrp: 149900, 
+                        fullDesc: 'Galaxy AI is here. Epic search, stunning nightography, and the productivity of the integrated S-Pen.', 
+                        images: [
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/s24%20ultra.webp',
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/s24%20ultra%20colours.webp'
+                        ] 
+                    },
+                    { 
+                        name: 'Apple Watch Ultra 2', 
+                        basePrice: 89900, 
+                        baseMrp: 99900, 
+                        fullDesc: 'Rugged titanium frame, precision dual-frequency GPS, and up to 36 hours of battery life.', 
+                        images: [
+                            'https://github.com/arishjagadesh/AJ-Store/blob/main/assets/watch%202.webp'
+                        ] 
+                    }
+                ],
+                selectProduct(p) { 
+                    this.selectedProduct = p; 
+                    this.activeImage = p.images[0]; 
+                    this.selectedConfig = '256 GB';
+                    this.currentPrice = p.basePrice;
+                    this.currentMrp = p.baseMrp;
+                },
+                updatePricing(addition) {
+                    this.currentPrice = this.selectedProduct.basePrice + addition;
+                    this.currentMrp = this.selectedProduct.baseMrp + addition;
+                },
+                filteredReviews() {
+                    if (!this.selectedProduct.name) return [];
+                    return this.allReviews.filter(r => r.product === this.selectedProduct.name);
+                },
+                async fetchGlobalReviews() {
+                    try {
+                        const res = await fetch(`${API}/api/admin/reviews`);
+                        this.allReviews = await res.json();
+                    } catch(e) { console.log("Backend offline"); }
+                },
+                
+                async processPurchase() {
+                    if (!this.selectedProduct.name) return alert('Select a product first.');
+                    if(this.masterCode !== '22CSE011') return alert('❌ INVALID MASTER CODE');
+                    
+                    this.isProcessingBuy = true; // Lock the UI
+
+                    try {
+                        const res = await fetch(`${API}/api/checkout`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ email: this.custEmail, coupon: "22CSE011" })
+                        });
+                        
+                        const data = await res.json();
+                        
+                        if(res.ok) { 
+                            alert('✅ ORDER SUCCESS. Token sent to Gmail.'); 
+                            this.modal = null; 
+                            this.masterCode = '';
+                        } else {
+                            // If your backend rate-limit kicks in, it'll show the error here
+                            alert("❌ " + (data.error || "Authorization Failed."));
+                        }
+                    } catch (e) { 
+                        alert("Backend Error."); 
+                    } finally {
+                        this.isProcessingBuy = false; // Unlock the UI when request finishes
+                    }
+                },
+                
+                async submitReview() {
+                    if (!this.selectedProduct.name) return alert("Please select a product first!");
+                    if (!this.reviewToken || !this.reviewText) return alert("Fields cannot be empty.");
+                    
+                    this.isProcessingReview = true; // Lock the UI
+
+                    try {
+                        const res = await fetch(`${API}/api/verify_review`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ 
+                                order_id: this.reviewToken, 
+                                review_text: this.reviewText,
+                                product_name: this.selectedProduct.name 
+                            })
+                        });
+                        
+                        const data = await res.json();
+                        const responseMessage = data.message || data.error || data.msg || JSON.stringify(data);
+                        
+                        if (res.ok) {
+                            alert("✅ Aegis Status: " + responseMessage);
+                            this.modal = null;
+                            this.reviewToken = '';
+                            this.reviewText = '';
+                            this.fetchGlobalReviews(); 
+                        } else {
+                            alert("❌ Aegis Failed: " + responseMessage);
+                        }
+                        
+                    } catch(e) { 
+                        alert("🚨 Backend Error: Cannot reach the Flask server."); 
+                    } finally {
+                        this.isProcessingReview = false; // Unlock the UI when request finishes
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
