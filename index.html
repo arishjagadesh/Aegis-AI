@@ -3,43 +3,122 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aegis | Neural Gateway</title>
+    <title>Aegis | Zero-Trust Gateway</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #0F172A; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .login-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 50px; border-radius: 30px; width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .scanner-line { width: 100%; height: 2px; background: #3C50E0; position: absolute; top: 0; left: 0; animation: scan 3s infinite linear; box-shadow: 0 0 15px #3C50E0; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        .input-field { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 12px; width: 100%; margin-bottom: 20px; outline: none; transition: 0.3s; }
-        .input-field:focus { border-color: #3C50E0; box-shadow: 0 0 10px rgba(60, 80, 224, 0.3); }
-        .login-btn { background: #3C50E0; color: white; width: 100%; padding: 15px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; transition: 0.3s; }
-        .login-btn:hover { background: #2563EB; transform: translateY(-2px); }
+        :root {
+            --neon-cyan: #00F0FF;
+            --neon-blue: #3C50E0;
+            --dark-bg: #030712;
+            --card-bg: rgba(15, 23, 42, 0.65);
+        }
+        body { 
+            background: radial-gradient(circle at 50% 50%, #111827 0%, var(--dark-bg) 100%); 
+            display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; 
+            font-family: 'Inter', sans-serif; margin: 0;
+        }
+        /* Cyber Grid Background */
+        body::before {
+            content: "";
+            position: absolute; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(60, 80, 224, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(60, 80, 224, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0; pointer-events: none;
+        }
+        .login-card { 
+            position: relative; z-index: 10;
+            background: var(--card-bg); backdrop-filter: blur(24px); 
+            border: 1px solid rgba(0, 240, 255, 0.15); 
+            padding: 50px; border-radius: 16px; width: 420px; text-align: center; 
+            box-shadow: 0 0 50px rgba(60, 80, 224, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05); 
+        }
+        /* HUD Targeting Corners */
+        .login-card::before, .login-card::after {
+            content: ""; position: absolute; width: 20px; height: 20px; border: 2px solid var(--neon-cyan); 
+        }
+        .login-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .login-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+        /* Radar Animation */
+        .radar-box {
+            position: relative; height: 90px; width: 90px; margin: 0 auto 30px; 
+            background: rgba(3, 7, 18, 0.8); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            border: 2px solid var(--neon-blue); overflow: hidden;
+            box-shadow: 0 0 20px rgba(60, 80, 224, 0.4);
+        }
+        .radar-sweep { 
+            content: ''; position: absolute; top: 0; left: 0; width: 50%; height: 50%;
+            background: linear-gradient(45deg, rgba(0, 240, 255, 0) 0%, rgba(0, 240, 255, 0.8) 100%);
+            transform-origin: 100% 100%;
+            animation: sweep 2s infinite linear;
+        }
+        @keyframes sweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        h2 { color: white; font-size: 26px; font-weight: 900; margin-bottom: 5px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        p.subtitle { color: var(--neon-cyan); font-size: 12px; margin-bottom: 35px; font-family: 'JetBrains Mono', monospace; font-weight: 700;}
+
+        /* Floating Input Fields */
+        .input-group { position: relative; margin-bottom: 25px; text-align: left; }
+        .input-label { position: absolute; top: -10px; left: 15px; background: #070D19; padding: 0 5px; color: var(--neon-blue); font-size: 11px; font-family: 'JetBrains Mono', monospace; font-weight: 800; border-radius: 4px; border: 1px solid rgba(60, 80, 224, 0.3); }
+        .input-field { 
+            background: rgba(3, 7, 18, 0.5); border: 1px solid rgba(255,255,255,0.15); color: white; 
+            padding: 16px 15px; border-radius: 8px; width: 100%; outline: none; transition: 0.3s; 
+            font-family: 'JetBrains Mono', monospace; box-sizing: border-box; letter-spacing: 1px;
+        }
+        .input-field:focus { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); background: rgba(0, 240, 255, 0.05); }
+        
+        .login-btn { 
+            background: transparent; color: var(--neon-cyan); width: 100%; padding: 16px; 
+            border-radius: 8px; font-weight: 800; border: 1px solid var(--neon-cyan); 
+            cursor: pointer; transition: 0.3s; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px;
+            text-transform: uppercase; position: relative; overflow: hidden;
+        }
+        .login-btn:hover { background: rgba(0, 240, 255, 0.1); box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); transform: translateY(-2px); }
+        
+        /* Secure Engine Status */
+        .system-status { margin-top: 35px; font-size: 11px; color: #64748B; letter-spacing: 2px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'JetBrains Mono', monospace; }
+        .dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; box-shadow: 0 0 10px #10B981; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        
+        .glitch-error { color: #EF4444; font-size: 12px; margin-bottom: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
     </style>
 </head>
 <body x-data="{ loading: false, error: false }">
     <div class="login-card">
-        <div style="position: relative; height: 80px; width: 80px; margin: 0 auto 30px; background: #1E293B; border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid #3C50E0; overflow: hidden;">
-            <div class="scanner-line"></div>
-            <span style="font-size: 32px; font-weight: 900; color: white;">AJ</span>
+        <div class="radar-box">
+            <div class="radar-sweep"></div>
+            <span style="font-size: 32px; font-weight: 900; color: white; position: relative; z-index: 2;">AJ</span>
         </div>
         
-        <h2 style="color: white; font-size: 24px; font-weight: 900; margin-bottom: 10px;">NEURAL ACCESS</h2>
-        <p style="color: #64748B; font-size: 14px; margin-bottom: 30px;">Identify yourself to access the Aegis Core.</p>
+        <h2>AEGIS CORE</h2>
+        <p class="subtitle">ZERO-TRUST NEURAL GATEWAY</p>
 
-        <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { window.location.href = 'dash.html' } else { loading = false; error = true; } }, 2000)">
-            <input type="text" placeholder="Operator ID" class="input-field" required value="Admin" readonly>
-            <input type="password" x-ref="pass" placeholder="Security Key" class="input-field" required>
+        <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { localStorage.setItem('aegisAdminAuth', 'true'); window.location.href = 'dashboard.html' } else { loading = false; error = true; $refs.pass.value = ''; } }, 1800)">
             
-            <p x-show="error" style="color: #EF4444; font-size: 12px; margin-bottom: 15px; font-weight: 700;">ACCESS DENIED: INVALID KEY</p>
+            <div class="input-group">
+                <label class="input-label">OPERATOR_ID</label>
+                <input type="text" class="input-field" required value="SYS_ADMIN" readonly>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">CRYPTOGRAPHIC_KEY</label>
+                <input type="password" x-ref="pass" placeholder="••••••••" class="input-field" required>
+            </div>
+            
+            <p x-show="error" class="glitch-error">⚠️ ERR: INVALID PRTC TOKEN</p>
 
             <button type="submit" class="login-btn">
-                <template x-if="!loading"><span>🔓 AUTHORIZE ACCESS</span></template>
-                <template x-if="loading"><span>⏳ DECRYPTING...</span></template>
+                <template x-if="!loading"><span>INITIATE HANDSHAKE</span></template>
+                <template x-if="loading"><span style="color: #F59E0B; text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);">VERIFYING PRTC...</span></template>
             </button>
         </form>
         
-        <p style="margin-top: 30px; font-size: 10px; color: #475569; letter-spacing: 2px; font-weight: 800;">PROTECTED BY DEBERTA-V3 NEURAL ENGINE</p>
+        <div class="system-status">
+            <div class="dot"></div>
+            DeBERTa-v3 ENGINE SECURE
+        </div>
     </div>
 </body>
 </html>
