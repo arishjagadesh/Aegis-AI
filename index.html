@@ -95,8 +95,35 @@
         <h2>AEGIS CORE</h2>
         <p class="subtitle">ZERO-TRUST NEURAL GATEWAY</p>
 
-       <form @submit.prevent="loading = true; setTimeout(() => { if($refs.pass.value === '22CSE011') { localStorage.setItem('aegisAdminAuth', 'true'); window.location.href = 'dash.html' } else { loading = false; error = true; $refs.pass.value = ''; } }, 1800)">
-            
+       <form @submit.prevent="
+    loading = true; 
+    error = false; 
+    fetch('https://aegis-engine.onrender.com/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: $refs.pass.value })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('AUTH_FAILED');
+        return response.json();
+    })
+    .then(data => {
+        if(data.valid) {
+            // Handshake Successful: Store session and redirect to the dashboard
+            localStorage.setItem('aegisAdminAuth', 'true');
+            window.location.href = 'dash.html';
+        } else {
+            throw new Error('INVALID_PRTC');
+        }
+    })
+    .catch(err => {
+        // Handshake Failed: Reset UI state
+        loading = false;
+        error = true;
+        $refs.pass.value = '';
+        console.error('Handshake Error:', err.message);
+    })
+">     
             <div class="input-group">
                 <label class="input-label">OPERATOR_ID</label>
                 <input type="text" class="input-field" required value="SYS_ADMIN" readonly>
