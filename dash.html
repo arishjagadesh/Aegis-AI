@@ -1,10 +1,10 @@
- <!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <script>
         // 1. Zero-Trust Gateway Check
         if (localStorage.getItem("aegisAdminAuth") !== "true") {
-            window.location.replace("index.html");
+            window.location.replace("index.html"); 
         }
     </script>
     <meta charset="UTF-8" />
@@ -110,7 +110,6 @@
       
       <aside class="aegis-sidebar">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px;">
-          <div style="width: 36px; height: 36px; background: var(--apple-blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 18px;">A</div>
           <span class="sf-display" style="font-size: 22px; font-weight: 800; color: var(--apple-text);">Aegis Core</span>
         </div>
         <nav>
@@ -308,7 +307,7 @@
 
             // Map the Table Logs
             document.getElementById('aegis-logs').innerHTML = reviews.length === 0 ? 
-                `<tr><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">No telemetry found in database.</td></tr>` 
+                `<tr><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">No reviews found in database.</td></tr>` 
                 : reviews.map(r => {
                 const isSecure = r.confidence_score >= 0.7;
                 return `
