@@ -2,140 +2,197 @@
 <html lang="en">
   <head>
     <script>
-    if (localStorage.getItem("aegisAdminAuth") !== "true") {
-        window.location.replace("index.html"); 
-    }
-</script>
+        // 1. Zero-Trust Gateway Check
+        if (localStorage.getItem("aegisAdminAuth") !== "true") {
+            window.location.replace("index.html"); 
+        }
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aegis AI | Cryptographic Vault</title>
+    
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="style.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <style>
-        /* 1. SEAMLESS LAYOUT ENGINE */
+        :root {
+            --apple-bg: #f5f5f7;
+            --apple-text: #1d1d1f;
+            --apple-blue: #0066cc;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+        }
+
+        /* Prevent Layout Jumping and Blowouts */
+        *, *::before, *::after { box-sizing: border-box; }
         html { overflow-y: scroll; scrollbar-gutter: stable; }
-        .aegis-main-container { display: flex; height: 100vh; overflow: hidden; background: #F1F5F9; }
         
-        /* 2. FIXED SIDEBAR */
-        .aegis-sidebar { width: 280px; background: white; border-right: 1px solid #E2E8F0; padding: 20px; flex-shrink: 0; z-index: 50; }
+        body {
+            background: radial-gradient(circle at top left, #ffffff 0%, #eef0f5 100%);
+            background-attachment: fixed;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+            color: var(--apple-text);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sf-display { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.015em; }
+
+        .aegis-main-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
         
-        /* 3. SCROLLABLE CONTENT WITH FIXED HEADER */
-        .aegis-content-wrapper { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        /* Glassmorphism Sidebar */
+        .aegis-sidebar { 
+            width: 280px; height: 100vh; flex-shrink: 0; z-index: 100; 
+            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0,0,0,0.05); padding: 24px; 
+        }
+        
+        .aegis-content-wrapper { flex-grow: 1; height: 100vh; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+        
+        /* Sticky Frosted Header */
         .sticky-header { 
-            position: sticky; top: 0; z-index: 40; width: 100%; 
-            background: white; border-bottom: 1px solid #E2E8F0; 
+            position: sticky; top: 0; z-index: 90; width: 100%; 
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0,0,0,0.05); 
             padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 4. DESIGN POLISH */
-        .aegis-page-body { padding: 30px; }
-        .aegis-card { background: white; padding: 32px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .aegis-page-body { padding: 40px; width: 100%; max-width: 1600px; margin: 0 auto; }
         
-        /* 5. SIDEBAR HOVER SYNC (Turns Black) */
-        .aegis-nav-item { display: block; padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; color: #64748B; text-decoration: none; font-weight: 600; transition: 0.2s; }
-        .aegis-nav-active { background: #3C50E0 !important; color: white !important; box-shadow: 0 10px 15px -3px rgba(60, 80, 224, 0.3); }
-        .aegis-nav-item:hover:not(.aegis-nav-active) { background: #111827 !important; color: white !important; }
+        /* Light Glass Cards */
+        .aegis-card { 
+            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 24px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.8); 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.04); transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* Navigation */
+        .aegis-nav-item { 
+            display: block; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; 
+            color: #555; text-decoration: none; font-weight: 600; transition: all 0.2s ease; 
+        }
+        .aegis-nav-active { background: var(--apple-blue) !important; color: white !important; box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3); }
+        .aegis-nav-item:hover:not(.aegis-nav-active) { background: rgba(0,0,0,0.05); color: var(--apple-text); }
 
-        /* 6. TABLE SCROLL LOGIC */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        /* Custom Scrollbar for Table Area */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        .sticky-table-header thead th { position: sticky; top: 0; background: #F8FAFC; z-index: 10; border-bottom: 1px solid #E2E8F0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        
+        .sticky-table-header th { position: sticky; top: 0; background: rgba(245,245,247,0.95); backdrop-filter: blur(10px); z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.05); }
     </style>
   </head>
-  <body x-data="{ 'darkMode': false }" :class="{'dark': darkMode}">
-    <div class="aegis-main-container">
+  <body>
+    <div class="aegis-main-container" id="app-shell">
       
       <aside class="aegis-sidebar">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px;">
-          <div style="width: 35px; height: 35px; background: #3C50E0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900;">A</div>
-          <span style="font-size: 20px; font-weight: 800; color: #1E293B;">AegisAdmin</span>
+        <span class="sf-display" style="font-size: 22px; font-weight: 800; color: var(--apple-text); letter-spacing: -0.5px;">Aegis Core</span>
         </div>
+
         <nav>
-            <p style="font-size: 10px; color: #94A3B8; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">System Menu</p>
+            <p style="font-size: 10px; color: #a1a1a6; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">Gateway Controls</p>
             <a href="dash.html" class="aegis-nav-item">📊 Live Dashboard</a>
             <a href="vault.html" class="aegis-nav-item aegis-nav-active">🔐 Token Vault</a>
             <a href="reports.html" class="aegis-nav-item">📋 Audit Reports</a>
-            <a href="export.html" class="aegis-nav-item">📥 Export PDF</a>
+            <a href="export.html" class="aegis-nav-item">📥 Export Intelligence</a>
         </nav>
       </aside>
 
       <div class="aegis-content-wrapper">
         <header class="sticky-header">
-          <h2 style="font-size: 22px; font-weight: 800; color: #1E293B;">Cryptographic Vault</h2>
+          <h2 class="sf-display" style="font-size: 24px; font-weight: 800; margin: 0;">Cryptographic Vault</h2>
           <div style="display: flex; align-items: center; gap: 15px;">
-            <span style="font-weight: 600; color: #64748B;">Admin</span>
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: #3C50E0; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;"></div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #e5f9e7; color: #28a745; padding: 6px 16px; border-radius: 980px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">
+                <span style="width: 6px; height: 6px; background: #28a745; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #28a745;"></span>
+                DEBERTA-V3 ONLINE
+            </div>
           </div>
         </header>
 
         <div class="aegis-page-body">
-            <div style="display: grid; grid-template-columns: 1fr; gap: 30px;">
-                
-                <div class="aegis-card" style="display: flex; justify-content: space-between; align-items: center;">
+            
+            <div class="aegis-card" style="padding: 0; overflow: hidden; height: calc(100vh - 180px); display: flex; flex-direction: column;">
+                <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                     <div>
-                        <h3 style="font-size: 20px; font-weight: 900; color: #1E293B; margin-bottom: 5px;">Master Alpha Code</h3>
-                        <p style="color: #94A3B8; font-size: 14px; font-weight: 500;">Global bypass key for internal system provisioning.</p>
+                        <h3 class="sf-display" style="font-size: 18px; font-weight: 800; color: var(--apple-text); margin: 0 0 4px 0;">PRTC Issuance Ledger</h3>
+                        <p style="color: #86868b; font-size: 12px; font-weight: 500; margin: 0;">Immutable record of all Zero-Trust tokens provisioned via the storefront.</p>
                     </div>
-                    <div style="background: #F8FAFC; padding: 15px 35px; border-radius: 12px; border: 1px solid #E2E8F0;">
-                        <span style="font-family: monospace; font-size: 28px; font-weight: 900; color: #3C50E0; letter-spacing: 4px;">Hidden</span>
-                    </div>
+                    <button onclick="fetchVaultData()" style="background: white; border: 1px solid #d2d2d7; color: var(--apple-text); padding: 8px 16px; border-radius: 980px; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        Sync Ledger
+                    </button>
                 </div>
-
-                <div class="aegis-card" style="padding: 0; overflow: hidden;">
-                    <div style="padding: 20px 32px; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 2px;">PLRT Issuance Ledger</h3>
-                        <button onclick="fetchVaultData()" style="background: #3C50E0; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 12px; text-transform: uppercase;">Sync Ledger</button>
-                    </div>
-                    
-                    <div class="custom-scrollbar" style="max-height: 500px; overflow-y: auto;">
-                        <table class="sticky-table-header" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="text-align: left;">
-                                    <th style="padding: 15px 32px; font-size: 10px; color: #64748B; font-weight: 800; text-transform: uppercase;">Token Hash</th>
-                                    <th style="padding: 15px 32px; font-size: 10px; color: #64748B; font-weight: 800; text-transform: uppercase;">Status</th>
-                                    <th style="padding: 15px 32px; font-size: 10px; color: #64748B; font-weight: 800; text-transform: uppercase;">Linked Node</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vault-logs" style="background: white;">
-                                </tbody>
-                        </table>
-                    </div>
+                
+                <div class="custom-scrollbar" style="flex-grow: 1; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead class="sticky-table-header">
+                            <tr style="text-align: left;">
+                                <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">PRTC Hash</th>
+                                <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+                                <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Target Node</th>
+                                <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Operator ID (Email)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vault-logs">
+                            <tr><td colspan="4" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">Establishing secure connection to Vault...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
         </div>
       </div>
     </div>
 
     <script>
-     const API = "https://aegis-engine.onrender.com";
+      // HF Secure Engine Link
+      const API = "https://aj-devil-aegis-engine.hf.space";
 
       async function fetchVaultData() {
           try {
-              const res = await fetch(`${API}/api/admin/reviews`);
+              const res = await fetch(`${API}/reviews`);
               const data = await res.json();
+              const reviews = data.documents || [];
               const tbody = document.getElementById('vault-logs');
               
-              if (data.length === 0) {
-                  tbody.innerHTML = '<tr><td colspan="3" style="padding: 60px; text-align: center; color: #94A3B8; font-style: italic;">Vault empty. Initialize checkout in store.</td></tr>';
+              if (reviews.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="4" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">Vault empty. Initialize checkout in store.</td></tr>';
                   return;
               }
 
-              tbody.innerHTML = data.map(r => `
-                  <tr style="border-bottom: 1px solid #F1F5F9;">
-                    <td style="padding: 20px 32px;"><p style="font-family: monospace; font-size: 13px; color: #64748B;">tk_${r.order_id.toLowerCase()}x9p${r.order_id.slice(-2)}</p></td>
+              tbody.innerHTML = reviews.map(r => `
+                  <tr style="border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(0,0,0,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
                     <td style="padding: 20px 32px;">
-                      <span style="background: #F1F5F9; color: #64748B; display: inline-flex; rounded-radius: 99px; padding: 4px 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Consumed</span>
+                        <p style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--apple-blue); margin: 0;">${r.token || 'N/A'}</p>
                     </td>
-                    <td style="padding: 20px 32px;"><p style="font-size: 14px; font-weight: 700; color: #1E293B;">${r.email}</p></td>
+                    <td style="padding: 20px 32px;">
+                      <span style="background: rgba(0,0,0,0.05); color: #555; border-radius: 980px; padding: 4px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Consumed</span>
+                    </td>
+                    <td style="padding: 20px 32px;">
+                        <span style="background: white; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; color: var(--apple-text); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            ${r.product_name || 'System Node'}
+                        </span>
+                    </td>
+                    <td style="padding: 20px 32px;">
+                        <p style="font-size: 14px; font-weight: 600; color: var(--apple-text); margin: 0;">${r.email || 'admin@aegis.com'}</p>
+                    </td>
                   </tr>
               `).join('');
-          } catch(e) { console.error("Vault link broken."); }
+          } catch(e) { 
+              console.error("Vault link broken.", e); 
+              document.getElementById('vault-logs').innerHTML = '<tr><td colspan="4" style="padding: 60px; text-align: center; color: #ff3b30; font-weight: 600;">Connection to Vault Failed.</td></tr>';
+          }
       }
 
-      window.onload = () => { fetchVaultData(); setInterval(fetchVaultData, 5000); };
+      window.onload = () => { 
+          gsap.from("#app-shell", { duration: 0.8, opacity: 0, ease: "power2.out" });
+          gsap.from(".aegis-card", { duration: 0.8, y: 20, opacity: 0, stagger: 0.1, ease: "power2.out", delay: 0.2 });
+          
+          fetchVaultData(); 
+          setInterval(fetchVaultData, 5000); 
+      };
     </script>
   </body>
-
 </html>
-
