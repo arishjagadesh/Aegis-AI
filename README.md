@@ -66,8 +66,10 @@ cd aegis-ai
 
 # Install dependencies
 pip install -r requirements.txt
-Usage
-Python
+```
+
+### Usage
+```python
 # Example inference script placeholder
 from aegis_core import ReviewClassifier
 
@@ -75,11 +77,15 @@ model = ReviewClassifier(model_path="models/deberta-v3-finetuned")
 result = model.predict("This is the best product I have ever purchased, highly recommend!")
 
 print(result) # Output: { 'classification': 'Authentic', 'confidence': 0.92 }
-🏗️ Future Roadmap
-Integration of dynamic client-side validation logic.
+```
 
-Expansion of the training dataset to include cross-platform review anomalies.
+---
 
-API containerization for seamless microservice deployment.
+## 🏗️ Future Roadmap
+* Integration of dynamic client-side validation logic.
+* Expansion of the training dataset to include cross-platform review anomalies.
+* API containerization for seamless microservice deployment.
 
-Architected by Arish Jagadesh
+---
+
+**Architected by [Arish Jagadesh](https://github.com/arishjagadesh)**
