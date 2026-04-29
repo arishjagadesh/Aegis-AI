@@ -2,10 +2,9 @@
 <html lang="en">
   <head>
     <script>
-        // 1. Zero-Trust Gateway Check
-        if (localStorage.getItem("aegisAdminAuth") !== "true") {
-            window.location.replace("index.html"); 
-        }
+        // Zero-Trust Gateway Check
+        // Uncomment the line below in production to enforce login
+        if (localStorage.getItem("aegisAdminAuth") !== "true") { window.location.replace("login.html"); }
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,6 +13,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -24,9 +25,9 @@
             --apple-blue: #0066cc;
             --apple-green: #34c759;
             --apple-red: #ff3b30;
+            --apple-amber: #f59e0b; 
         }
 
-        /* Prevent Layout Jumping and Blowouts */
         *, *::before, *::after { box-sizing: border-box; }
         html { overflow-y: scroll; scrollbar-gutter: stable; }
         
@@ -40,20 +41,18 @@
         }
 
         .sf-display { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.015em; }
+        [x-cloak] { display: none !important; }
 
-        /* Width 100% instead of 100vw prevents horizontal scroll issues */
         .aegis-main-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
         
-        /* Glassmorphism Sidebar */
+        /* Glassmorphism Components */
         .aegis-sidebar { 
             width: 280px; height: 100vh; flex-shrink: 0; z-index: 100; 
             background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border-right: 1px solid rgba(0,0,0,0.05); padding: 24px; 
         }
-        
         .aegis-content-wrapper { flex-grow: 1; height: 100vh; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
         
-        /* Sticky Frosted Header */
         .sticky-header { 
             position: sticky; top: 0; z-index: 90; width: 100%; 
             background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -62,23 +61,11 @@
         }
 
         .aegis-page-body { padding: 40px; width: 100%; max-width: 1600px; margin: 0 auto; }
+        .export-grid { display: grid; grid-template-columns: 1.2fr 2fr; gap: 32px; }
         
-        /* Responsive Grid Layouts */
-        .aegis-metrics-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 24px; 
-            margin-bottom: 32px; 
-        }
+        .aegis-metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 32px; }
+        .aegis-charts-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; margin-bottom: 32px; }
         
-        .aegis-charts-grid { 
-            display: grid; 
-            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); 
-            gap: 24px; 
-            margin-bottom: 32px; 
-        }
-        
-        /* Light Glass Cards */
         .aegis-card { 
             background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 24px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.8); 
@@ -88,260 +75,523 @@
 
         /* Navigation */
         .aegis-nav-item { 
-            display: block; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; 
-            color: #555; text-decoration: none; font-weight: 600; transition: all 0.2s ease; 
+            display: block; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; cursor: pointer;
+            color: #555; text-decoration: none; font-weight: 600; transition: all 0.2s ease; border: 1px solid transparent;
         }
         .aegis-nav-active { background: var(--apple-blue) !important; color: white !important; box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3); }
         .aegis-nav-item:hover:not(.aegis-nav-active) { background: rgba(0,0,0,0.05); color: var(--apple-text); }
 
-        /* Typography Utilities */
+        /* Typography & Badges */
         .metric-title { color: #86868b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
         .metric-value { font-size: 36px; font-weight: 800; color: var(--apple-text); letter-spacing: -1px;}
         .status-badge { padding: 4px 12px; border-radius: 980px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;}
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        /* Table & Inputs */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .sticky-table-header th { position: sticky; top: 0; background: rgba(245,245,247,0.95); backdrop-filter: blur(10px); z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.05); }
+
+        .glass-input, .glass-select {
+            background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.1); border-radius: 12px;
+            padding: 12px 14px; font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+            font-size: 12px; font-weight: 600; color: var(--apple-text); width: 100%; outline: none; transition: all 0.2s ease;
+        }
+        .glass-select {
+            appearance: none; cursor: pointer; padding: 14px 16px; font-size: 13px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231d1d1f%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat; background-position: right 16px top 50%; background-size: 10px auto;
+        }
+        .glass-input:focus, .glass-select:focus { border-color: var(--apple-blue); box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1); }
+
+        .export-btn, .btn-investigate {
+            border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; border: none;
+        }
+        .export-btn { width: 100%; padding: 14px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-pdf { background: #ffeceb; color: var(--apple-red); border: 1px solid #fecaca; }
+        .btn-pdf:hover { background: var(--apple-red); color: white; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
+        .btn-csv { background: #e5f9e7; color: var(--apple-green); border: 1px solid #bbf7d0; }
+        .btn-csv:hover { background: var(--apple-green); color: white; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
+        
+        .btn-investigate {
+            background: white; border: 1px solid rgba(0,0,0,0.1); color: var(--apple-blue); padding: 6px 14px; border-radius: 980px; 
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .btn-investigate:hover { background: rgba(0,102,204,0.05); border-color: var(--apple-blue); }
     </style>
   </head>
-  <body>
+  
+  <body x-data="aegisSOC()" x-init="bootSystem()">
     <div class="aegis-main-container" id="app-shell">
       
       <aside class="aegis-sidebar">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px;">
-          <span class="sf-display" style="font-size: 22px; font-weight: 800; color: var(--apple-text);">Aegis Core</span>
+          <span class="sf-display" style="font-size: 22px; font-weight: 800; color: var(--apple-text); letter-spacing: -0.5px;">Aegis Core</span>
         </div>
         <nav>
             <p style="font-size: 10px; color: #a1a1a6; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">Gateway Controls</p>
-            <a href="dash.html" class="aegis-nav-item aegis-nav-active">📊 Live Dashboard</a>
-            <a href="vault.html" class="aegis-nav-item">🔐 Token Vault</a>
-            <a href="reports.html" class="aegis-nav-item">📋 Audit Reports</a>
-            <a href="export.html" class="aegis-nav-item">📥 Export Intelligence</a>
+            <button type="button" @click.prevent="switchTab('dashboard')" :class="activeTab === 'dashboard' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📊 Live Dashboard</button>
+            <button type="button" @click.prevent="switchTab('vault')" :class="activeTab === 'vault' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">🔐 Token Vault</button>
+            <button type="button" @click.prevent="switchTab('reports')" :class="activeTab === 'reports' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📋 Audit Reports</button>
+            <button type="button" @click.prevent="switchTab('export')" :class="activeTab === 'export' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📥 Export Intelligence</button>
         </nav>
       </aside>
 
       <div class="aegis-content-wrapper">
         <header class="sticky-header">
-          <h2 class="sf-display" style="font-size: 24px; font-weight: 800; margin: 0;">System Overview</h2>
+          <h2 class="sf-display" style="font-size: 24px; font-weight: 800; margin: 0;" x-text="getPageTitle()"></h2>
+          
           <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 8px; background: #e5f9e7; color: #28a745; padding: 6px 16px; border-radius: 980px; font-size: 12px; font-weight: 700;">
-                <span style="width: 6px; height: 6px; background: #28a745; border-radius: 50%; display: inline-block;"></span>
+            <div style="display: flex; align-items: center; gap: 8px; background: #e5f9e7; color: #28a745; padding: 6px 16px; border-radius: 980px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">
+                <span class="animate-pulse" style="width: 6px; height: 6px; background: #28a745; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #28a745;"></span>
                 DEBERTA-V3 ONLINE
             </div>
+            
+            <button type="button" 
+                    onclick="localStorage.removeItem('aegisAdminAuth'); window.location.href='index.html';" 
+                    style="background: white; border: 1px solid #fecaca; color: var(--apple-red); padding: 6px 16px; border-radius: 980px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.04);"
+                    onmouseover="this.style.background='#ffeceb'" 
+                    onmouseout="this.style.background='white'">
+                Terminate Session
+            </button>
           </div>
         </header>
 
         <div class="aegis-page-body">
             
-            <div class="aegis-metrics-grid">
-              <div class="aegis-card">
-                <p class="metric-title">Total Intercepts</p>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="sf-display metric-value" id="stat-total">0</span>
-                  <span class="status-badge" style="background: rgba(0,102,204,0.1); color: var(--apple-blue);">Live Sync</span>
+            <div x-show="activeTab === 'dashboard'" x-cloak x-transition.opacity.duration.300ms>
+                <div class="aegis-metrics-grid">
+                  <div class="aegis-card">
+                    <p class="metric-title">Total Intercepts</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span class="sf-display metric-value" x-text="globalTraces.length">0</span>
+                      <span class="status-badge" style="background: rgba(0,102,204,0.1); color: var(--apple-blue);">Live Sync</span>
+                    </div>
+                  </div>
+                  <div class="aegis-card">
+                    <p class="metric-title">Authentic Nodes</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span class="sf-display metric-value" style="color: var(--apple-green);" x-text="verifiedCount()">0</span>
+                      <span class="status-badge" style="background: #e5f9e7; color: var(--apple-green);">SECURE</span>
+                    </div>
+                  </div>
+                  <div class="aegis-card">
+                    <p class="metric-title">Neutralized Threats</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span class="sf-display metric-value" style="color: var(--apple-red);" x-text="threatCount()">0</span>
+                      <span class="status-badge" style="background: #ffeceb; color: var(--apple-red);">BLOCKED</span>
+                    </div>
+                  </div>
+                  <div class="aegis-card">
+                    <p class="metric-title">NLP Architecture</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                      <span class="sf-display" style="font-size: 20px; font-weight: 700; color: var(--apple-text);">DeBERTa-v3</span>
+                      <span style="color: #86868b; font-size: 10px; font-family: 'JetBrains Mono';">1.7GB</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="aegis-card">
-                <p class="metric-title">Authentic Nodes</p>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="sf-display metric-value" style="color: var(--apple-green);" id="stat-verified">0</span>
-                  <span class="status-badge" style="background: #e5f9e7; color: var(--apple-green);">SECURE</span>
+
+                <div class="aegis-charts-grid">
+                  <div class="aegis-card">
+                    <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin-bottom: 24px;">Telemetry Trajectory</h3>
+                    <div id="chart-trajectory" style="min-height: 320px;"></div>
+                  </div>
+                  <div class="aegis-card">
+                    <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin-bottom: 24px;">Verdict Distribution</h3>
+                    <div id="chart-verdict" style="display: flex; justify-content: center; min-height: 280px;"></div>
+                  </div>
                 </div>
-              </div>
-              <div class="aegis-card">
-                <p class="metric-title">Neutralized Threats</p>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="sf-display metric-value" style="color: var(--apple-red);" id="stat-threats">0</span>
-                  <span class="status-badge" style="background: #ffeceb; color: var(--apple-red);">BLOCKED</span>
+
+                <div class="aegis-card" style="padding: 0; overflow: hidden;">
+                  <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin: 0;">Real-Time Neural Analysis</h3>
+                    <button type="button" @click.prevent="fetchGlobalData(true)" style="background: white; border: 1px solid #d2d2d7; color: var(--apple-text); padding: 8px 16px; border-radius: 980px; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <span x-show="!isSyncing">Force Sync</span>
+                        <span x-show="isSyncing">Syncing...</span>
+                    </button>
+                  </div>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: rgba(245,245,247,0.5); text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                      <tr>
+                        <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">PRTC Hash</th>
+                        <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Integrity Confidence</th>
+                        <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">System Verdict</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="r in globalTraces" :key="r.token + r.timestamp">
+                          <tr style="border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(0,0,0,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <td style="padding: 16px 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--apple-blue);" x-text="r.token ? r.token.substring(0,8) : 'PRTC-N/A'"></td>
+                            <td style="padding: 16px 24px; font-weight: 700; font-size: 14px;" :style="r.confidence_score >= 0.7 ? 'color: var(--apple-green)' : 'color: var(--apple-red)'" x-text="(r.confidence_score * 100).toFixed(1) + '%'"></td>
+                            <td style="padding: 16px 24px;">
+                                <span style="padding: 4px 12px; border-radius: 980px; font-size: 10px; font-weight: 800;" 
+                                      :style="r.confidence_score >= 0.7 ? 'background: #e5f9e7; color: #28a745' : 'background: #ffeceb; color: #dc3545'"
+                                      x-text="r.confidence_score >= 0.7 ? 'VERIFIED' : 'NEUTRALIZED'"></span>
+                            </td>
+                          </tr>
+                        </template>
+                        <tr x-show="globalTraces.length === 0"><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">Establishing secure connection...</td></tr>
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-              <div class="aegis-card">
-                <p class="metric-title">NLP Architecture</p>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                  <span class="sf-display" style="font-size: 20px; font-weight: 700; color: var(--apple-text);">DeBERTa-v3</span>
-                  <span style="color: #86868b; font-size: 10px; font-family: 'JetBrains Mono';">1.7GB</span>
-                </div>
-              </div>
             </div>
 
-            <div class="aegis-charts-grid">
-              <div class="aegis-card">
-                <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin-bottom: 24px;">Telemetry Trajectory</h3>
-                <div id="chart-trajectory"></div>
-              </div>
-              <div class="aegis-card">
-                <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin-bottom: 24px;">Verdict Distribution</h3>
-                <div id="chart-verdict" style="display: flex; justify-content: center;"></div>
-              </div>
+            <div x-show="activeTab === 'vault'" x-cloak x-transition.opacity.duration.300ms>
+                <div class="aegis-card" style="padding: 0; overflow: hidden; height: calc(100vh - 180px); display: flex; flex-direction: column;">
+                    <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                        <div>
+                            <h3 class="sf-display" style="font-size: 18px; font-weight: 800; color: var(--apple-text); margin: 0 0 4px 0;">PRTC Issuance Ledger</h3>
+                            <p style="color: #86868b; font-size: 12px; font-weight: 500; margin: 0;">Immutable record of all Zero-Trust tokens provisioned.</p>
+                        </div>
+                    </div>
+                    <div class="custom-scrollbar" style="flex-grow: 1; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead class="sticky-table-header">
+                                <tr style="text-align: left;">
+                                    <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">PRTC Hash</th>
+                                    <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Status</th>
+                                    <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Target Node</th>
+                                    <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Operator ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="r in globalTraces" :key="r.token">
+                                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(0,0,0,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                                        <td style="padding: 20px 32px;">
+                                            <p style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--apple-blue); margin: 0;" x-text="r.token"></p>
+                                        </td>
+                                        <td style="padding: 20px 32px;">
+                                            <span style="background: rgba(0,0,0,0.05); color: #555; border-radius: 980px; padding: 4px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Consumed</span>
+                                        </td>
+                                        <td style="padding: 20px 32px;">
+                                            <span style="background: white; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; color: var(--apple-text);" x-text="r.product_name"></span>
+                                        </td>
+                                        <td style="padding: 20px 32px;">
+                                            <p style="font-size: 14px; font-weight: 600; color: var(--apple-text); margin: 0;" x-text="r.email"></p>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="globalTraces.length === 0"><td colspan="4" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">Vault empty.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <div class="aegis-card" style="padding: 0; overflow: hidden;">
-              <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">
-                <h3 class="sf-display" style="font-weight: 800; font-size: 18px; margin: 0;">Real-Time Neural Analysis</h3>
-                <button onclick="fetchAegisData()" style="background: white; border: 1px solid #d2d2d7; color: var(--apple-text); padding: 8px 16px; border-radius: 980px; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                    Force Sync
-                </button>
-              </div>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead style="background: rgba(245,245,247,0.5); text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                  <tr>
-                    <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">PRTC Hash</th>
-                    <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Integrity Confidence</th>
-                    <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">System Verdict</th>
-                  </tr>
-                </thead>
-                <tbody id="aegis-logs">
-                    <tr><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">Establishing secure connection to DeBERTa-v3...</td></tr>
-                </tbody>
-              </table>
+            <div x-show="activeTab === 'reports'" x-cloak x-transition.opacity.duration.300ms>
+                <div class="aegis-card" style="padding: 0; overflow: hidden; height: calc(100vh - 180px); display: flex; flex-direction: column;">
+                    <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                        <div>
+                            <h3 class="sf-display" style="font-size: 18px; font-weight: 800; color: var(--apple-text); margin: 0 0 4px 0;">Full System Audit Trail</h3>
+                            <p style="color: #86868b; font-size: 12px; font-weight: 500; margin: 0;">Real-time analysis with SOC Manual Override capabilities.</p>
+                        </div>
+                    </div>
+                    <div class="custom-scrollbar" style="flex-grow: 1; overflow-y: auto;">
+                      <table style="width: 100%; border-collapse: collapse;">
+                        <thead class="sticky-table-header">
+                          <tr style="text-align: left;">
+                            <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Reference Hash</th>
+                            <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; width: 35%;">Analysis Payload</th>
+                            <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">AI Score</th>
+                            <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Verdict</th>
+                            <th style="padding: 16px 32px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase; text-align: right;">Admin Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="r in globalTraces" :key="'rpt'+r.token">
+                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                                    <td style="padding: 20px 32px;">
+                                        <p style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--apple-blue); margin: 0;" x-text="r.token"></p>
+                                    </td>
+                                    <td style="padding: 20px 32px;">
+                                        <p style="font-size: 13px; color: #555; font-style: italic; line-height: 1.5; margin: 0;" x-text="`&quot;${r.text}&quot;`"></p>
+                                    </td>
+                                    <td style="padding: 20px 32px;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span style="font-weight: 800; font-size: 14px;" :style="r.confidence_score >= 0.7 ? 'color: var(--apple-green)' : 'color: var(--apple-red)'" x-text="(r.confidence_score * 100).toFixed(1) + '%'"></span>
+                                            <div style="width: 60px; height: 6px; background: rgba(0,0,0,0.05); border-radius: 99px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
+                                                <div style="height: 100%;" :style="`background: ${r.confidence_score >= 0.7 ? 'var(--apple-green)' : 'var(--apple-red)'}; width: ${(r.confidence_score * 100).toFixed(0)}%`"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 20px 32px;">
+                                        <span style="padding: 4px 12px; border-radius: 980px; font-size: 10px; font-weight: 800; text-transform: uppercase;"
+                                              :style="r.is_verified ? 'background: #e5f9e7; color: #28a745; border: 1px solid #D1FAE5;' : 'background: #ffeceb; color: #dc3545; border: 1px solid #FEE2E2;'"
+                                              x-text="r.is_verified ? 'VERIFIED' : 'NEUTRALIZED'">
+                                        </span>
+                                    </td>
+                                    <td style="padding: 20px 32px; text-align: right;">
+                                        <template x-if="r.is_verified">
+                                            <button type="button" @click.prevent="overrideTrace(r.token, false)" class="btn-investigate" style="color: var(--apple-red); border-color: #fecaca;">Force Block</button>
+                                        </template>
+                                        <template x-if="!r.is_verified">
+                                            <button type="button" @click.prevent="overrideTrace(r.token, true)" class="btn-investigate" style="color: var(--apple-green); border-color: #bbf7d0;">Force Approve</button>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
             </div>
-            
+
+            <div x-show="activeTab === 'export'" x-cloak x-transition.opacity.duration.300ms class="export-grid">
+                
+                <div class="aegis-card" style="height: fit-content;">
+                    <h3 class="sf-display" style="font-size: 18px; font-weight: 800; margin: 0 0 4px 0;">Precision Extraction</h3>
+                    <p style="color: #86868b; font-size: 12px; font-weight: 500; margin: 0 0 24px 0;">Filter compliance-ready telemetry.</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px;">Temporal Filter (Start)</label>
+                            <input type="datetime-local" x-model="exportFilters.start" @change="applyFilters()" class="glass-input">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px;">Temporal Filter (End)</label>
+                            <input type="datetime-local" x-model="exportFilters.end" @change="applyFilters()" class="glass-input">
+                            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+                                <button type="button" @click.prevent="clearDates()" style="background: none; border: none; color: var(--apple-blue); font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase;">Clear Dates</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px;">Threat Category</label>
+                            <select x-model="exportFilters.category" @change="applyFilters()" class="glass-select">
+                                <option value="all">All Intercepts</option>
+                                <option value="verified">Verified (Secure Nodes)</option>
+                                <option value="blocked">Neutralized (Threats)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px;">Staged For Export</label>
+                        <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 13px; font-weight: 600; color: var(--apple-text);">Available Records</span>
+                            <span style="font-family: 'JetBrains Mono'; font-weight: 800; font-size: 16px; color: var(--apple-blue);" x-text="filteredExportData.length">0</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <button type="button" @click.prevent="exportCSV()" class="export-btn btn-csv">Download CSV Dump</button>
+                        <button type="button" @click.prevent="exportPDF()" class="export-btn btn-pdf">Generate PDF Report</button>
+                    </div>
+                </div>
+
+                <div class="aegis-card" style="padding: 0; overflow: hidden; height: calc(100vh - 180px); display: flex; flex-direction: column;">
+                    <div style="padding: 24px; border-bottom: 1px solid rgba(0,0,0,0.05); flex-shrink: 0;">
+                      <h3 class="sf-display" style="font-size: 18px; font-weight: 800; color: var(--apple-text); margin: 0 0 4px 0;">Data Preview</h3>
+                    </div>
+                    <div class="custom-scrollbar" style="flex-grow: 1; overflow-y: auto;">
+                      <table style="width: 100%; border-collapse: collapse;">
+                        <thead class="sticky-table-header">
+                          <tr style="text-align: left;">
+                            <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">PRTC Hash</th>
+                            <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Date / Time</th>
+                            <th style="padding: 16px 24px; font-size: 11px; color: #86868b; font-weight: 700; text-transform: uppercase;">Verdict</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="r in filteredExportData" :key="'exp'+r.token">
+                              <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                                <td style="padding: 16px 24px; font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 600; color: var(--apple-blue);" x-text="r.token"></td>
+                                <td style="padding: 16px 24px; font-weight: 600; font-size: 12px; color: #555;" x-text="new Date(r.timestamp).toLocaleString()"></td>
+                                <td style="padding: 16px 24px;">
+                                  <span style="padding: 4px 10px; border-radius: 980px; font-size: 9px; font-weight: 800; text-transform: uppercase;"
+                                        :style="r.is_verified ? 'background: #e5f9e7; color: #28a745;' : 'background: #ffeceb; color: #dc3545;'"
+                                        x-text="r.is_verified ? 'VERIFIED' : 'BLOCKED'">
+                                  </span>
+                                </td>
+                              </tr>
+                            </template>
+                            <tr x-show="filteredExportData.length === 0"><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">No data matches the selected filters.</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
       </div>
     </div>
 
     <script>
-      // 2. CONNECT TO YOUR HUGGING FACE BRAIN
-      const API = "https://aj-devil-aegis-engine.hf.space";
+      const ENGINE_API = "https://aj-devil-aegis-engine.hf.space";
       
-      let trajChart, verdChart;
+      let trajChart = null;
+      let verdChart = null;
 
-      // 3. Initialize Light Mode Charts (Strictly Zeroed Out)
-      function initCharts() {
-        trajChart = new ApexCharts(document.querySelector("#chart-trajectory"), {
-          series: [
-            { name: 'Verified', data: [0, 0, 0, 0, 0, 0, 0] }, 
-            { name: 'Blocked', data: [0, 0, 0, 0, 0, 0, 0] }
-          ],
-          chart: { height: 320, type: 'area', toolbar: {show: false}, zoom: {enabled: false}, fontFamily: 'Inter, sans-serif' },
-          colors: ['#34c759', '#ff3b30'],
-          dataLabels: { enabled: false },
-          stroke: { curve: 'smooth', width: 3 },
-          fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0 } },
-          xaxis: { categories: ["-6d", "-5d", "-4d", "-3d", "-2d", "Yest", "Today"], axisBorder: {show: false}, axisTicks: {show: false} },
-          grid: { borderColor: 'rgba(0,0,0,0.05)', strokeDashArray: 4 }
-        });
-        trajChart.render();
+      function aegisSOC() {
+          return {
+              activeTab: 'dashboard',
+              isSyncing: false,
+              
+              // THE MASTER DATABASE
+              globalTraces: [], 
+              
+              // Export Filter State
+              exportFilters: { start: '', end: '', category: 'all' },
+              filteredExportData: [],
 
-        verdChart = new ApexCharts(document.querySelector("#chart-verdict"), {
-          series: [0, 0], // Start empty, no fake 50/50 split
-          labels: ['Authentic', 'Neutralized'],
-          chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
-          colors: ['#34c759', '#ff3b30'],
-          plotOptions: { pie: { donut: { size: '75%' } } },
-          dataLabels: { enabled: false },
-          stroke: { show: false },
-          legend: { position: 'bottom', markers: { radius: 12 } },
-          noData: { text: "Awaiting Telemetry", align: 'center', verticalAlign: 'middle', style: { color: '#86868b', fontSize: '14px' } }
-        });
-        verdChart.render();
+              // Routing
+              switchTab(tab) {
+                  this.activeTab = tab;
+                  if(tab === 'export') this.applyFilters();
+              },
+              getPageTitle() {
+                  const titles = { 'dashboard': 'System Overview', 'vault': 'Cryptographic Vault', 'reports': 'Neural Audit Reports', 'export': 'Export Intelligence' };
+                  return titles[this.activeTab];
+              },
+
+              // Fast Metric Computed Functions
+              verifiedCount() { return this.globalTraces.filter(r => r.is_verified).length; },
+              threatCount() { return this.globalTraces.length - this.verifiedCount(); },
+
+              // Main Database Fetch
+              async fetchGlobalData(force = false) {
+                  if (this.isSyncing) return;
+                  this.isSyncing = true;
+                  try {
+                      const res = await fetch(`${ENGINE_API}/reviews`);
+                      const data = await res.json();
+                      
+                      if (data.documents && JSON.stringify(this.globalTraces) !== JSON.stringify(data.documents)) {
+                          this.globalTraces = data.documents;
+                          this.applyFilters(); 
+                          this.updateCharts(); 
+                      }
+                  } catch(e) {
+                      console.error("Core Offline.", e);
+                  } finally {
+                      setTimeout(() => this.isSyncing = false, 500); 
+                  }
+              },
+
+              // SOC Admin: Real Database Override
+              async overrideTrace(token, newStatus) {
+                  const action = newStatus ? "APPROVE" : "BLOCK";
+                  if(!confirm(`Are you sure you want to manually ${action} trace ${token}?`)) return;
+                  
+                  try {
+                      const res = await fetch(`${ENGINE_API}/override`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ token: token, new_status: newStatus })
+                      });
+                      
+                      if(res.ok) {
+                          this.fetchGlobalData(true); 
+                      } else {
+                          alert("Override failed. Engine rejected the command.");
+                      }
+                  } catch(e) {
+                      alert("Network error. Could not reach Aegis Core.");
+                  }
+              },
+
+              // Charts Logic
+              initCharts() {
+                  trajChart = new ApexCharts(document.querySelector("#chart-trajectory"), {
+                      series: [{ name: 'Verified', data: [] }, { name: 'Blocked', data: [] }],
+                      chart: { height: 320, type: 'area', toolbar: {show: false}, zoom: {enabled: false}, fontFamily: 'Inter, sans-serif' },
+                      colors: ['#34c759', '#ff3b30'], dataLabels: { enabled: false }, stroke: { curve: 'smooth', width: 3 },
+                      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0 } },
+                      xaxis: { categories: ["-6d", "-5d", "-4d", "-3d", "-2d", "Yest", "Today"], axisBorder: {show: false}, axisTicks: {show: false} },
+                      grid: { borderColor: 'rgba(0,0,0,0.05)', strokeDashArray: 4 }, noData: {text: 'Syncing...'}
+                  });
+                  trajChart.render();
+
+                  verdChart = new ApexCharts(document.querySelector("#chart-verdict"), {
+                      series: [], labels: ['Authentic', 'Neutralized'],
+                      chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
+                      colors: ['#34c759', '#ff3b30'], plotOptions: { pie: { donut: { size: '75%' } } },
+                      dataLabels: { enabled: false }, stroke: { show: false }, legend: { position: 'bottom', markers: { radius: 12 } },
+                      noData: { text: "Awaiting Telemetry", align: 'center', style: { color: '#86868b', fontSize: '14px' } }
+                  });
+                  verdChart.render();
+              },
+              updateCharts() {
+                  const verified = this.verifiedCount();
+                  const flagged = this.threatCount();
+                  if (this.globalTraces.length > 0 && verdChart) verdChart.updateSeries([verified, flagged]);
+
+                  let vHist = [0,0,0,0,0,0,0]; let bHist = [0,0,0,0,0,0,0]; let labels = [];
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  for (let i = 6; i >= 0; i--) {
+                      const d = new Date(today); d.setDate(d.getDate() - i);
+                      labels.push(i === 0 ? "LIVE" : d.toLocaleDateString('en-US', { weekday: 'short' }));
+                  }
+                  this.globalTraces.forEach(r => {
+                      const rDate = new Date(r.timestamp || new Date()); rDate.setHours(0,0,0,0);
+                      const diffDays = Math.floor(Math.abs(today - rDate) / (1000 * 60 * 60 * 24));
+                      if (diffDays <= 6) {
+                          const idx = 6 - diffDays;
+                          r.is_verified ? vHist[idx]++ : bHist[idx]++;
+                      }
+                  });
+                  if(trajChart) {
+                      trajChart.updateOptions({ xaxis: { categories: labels } });
+                      trajChart.updateSeries([{ name: 'Verified', data: vHist }, { name: 'Blocked', data: bHist }]);
+                  }
+              },
+
+              // Export Logic
+              clearDates() { this.exportFilters.start = ""; this.exportFilters.end = ""; this.applyFilters(); },
+              applyFilters() {
+                  const sTime = this.exportFilters.start ? new Date(this.exportFilters.start).getTime() : null;
+                  const eTime = this.exportFilters.end ? new Date(this.exportFilters.end).getTime() : null;
+                  const cat = this.exportFilters.category;
+
+                  this.filteredExportData = this.globalTraces.filter(r => {
+                      if (cat === 'verified' && !r.is_verified) return false;
+                      if (cat === 'blocked' && r.is_verified) return false;
+                      const lTime = new Date(r.timestamp).getTime();
+                      if (sTime && lTime < sTime) return false;
+                      if (eTime && lTime > eTime) return false;
+                      return true;
+                  });
+              },
+              exportCSV() {
+                  if(this.filteredExportData.length === 0) return alert("No data to export.");
+                  let csv = "Timestamp,PRTC Token,Email,Target Node,Analyzed Text,Confidence Score,Verdict\n";
+                  this.filteredExportData.forEach(r => {
+                      const v = r.is_verified ? "VERIFIED" : "BLOCKED";
+                      const text = r.text ? r.text.replace(/"/g, '""') : ""; 
+                      csv += `${r.timestamp},${r.token},${r.email},${r.product_name},"${text}",${r.confidence_score},${v}\n`;
+                  });
+                  const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+                  link.download = `Aegis_Audit_Log_${Date.now()}.csv`; link.click();
+              },
+              exportPDF() {
+                  if(this.filteredExportData.length === 0) return alert("No data to export.");
+                  if(!window.jspdf) return alert("PDF Engine loading...");
+                  const doc = new window.jspdf.jsPDF('landscape');
+                  doc.setFontSize(18); doc.text("Aegis Core | Precision Audit Report", 14, 22);
+                  doc.setFontSize(10); doc.setTextColor(100);
+                  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+                  doc.text(`Total Intercepts: ${this.filteredExportData.length}`, 14, 36);
+
+                  const rows = this.filteredExportData.map(r => [
+                      new Date(r.timestamp).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),
+                      r.token, r.email, r.product_name, (r.confidence_score*100).toFixed(1)+"%", r.is_verified ? "VERIFIED" : "BLOCKED"
+                  ]);
+                  doc.autoTable({
+                      head: [["Date/Time", "PRTC Token", "Operator", "Target Node", "Confidence", "Verdict"]],
+                      body: rows, startY: 45, theme: 'grid', styles: { fontSize: 9 }, headStyles: { fillColor: [0, 102, 204] }
+                  });
+                  doc.save(`Aegis_Report_${Date.now()}.pdf`);
+              },
+
+              // Initialization
+              bootSystem() {
+                  gsap.from("#app-shell", { duration: 0.8, opacity: 0, ease: "power2.out" });
+                  this.initCharts();
+                  this.fetchGlobalData();
+                  setInterval(() => this.fetchGlobalData(), 3000); 
+              }
+          }
       }
-
-      // 4. Fetch and Process HF Data Client-Side
-      async function fetchAegisData() {
-        try {
-            const res = await fetch(`${API}/reviews`);
-            const data = await res.json();
-            
-            const reviews = data.documents || [];
-            const total = reviews.length;
-            
-            const verified = reviews.filter(r => r.confidence_score >= 0.7).length;
-            const flagged = total - verified;
-            
-            // Update UI Counters
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-verified').innerText = verified;
-            document.getElementById('stat-threats').innerText = flagged;
-
-            // Sync Donut Chart (Only update if data exists to prevent visual glitch)
-            if (total > 0) {
-                verdChart.updateSeries([verified, flagged]);
-            }
-
-            // --- REAL-TIME TIME-SERIES CALCULATION ---
-            // Create empty arrays for the last 7 days
-            let verifiedHistory = [0, 0, 0, 0, 0, 0, 0];
-            let blockedHistory = [0, 0, 0, 0, 0, 0, 0];
-            let dynamicLabels = [];
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize to midnight
-
-            // Generate the last 7 days of labels
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date(today);
-                d.setDate(d.getDate() - i);
-                dynamicLabels.push(i === 0 ? "LIVE" : d.toLocaleDateString('en-US', { weekday: 'short' }));
-            }
-
-            // Map every document in the database to its exact day
-            reviews.forEach(r => {
-                // Safely grab the timestamp (fallback to today if missing)
-                const rDate = new Date(r.timestamp || new Date());
-                rDate.setHours(0, 0, 0, 0);
-                
-                // Calculate how many days ago this review occurred
-                const diffTime = Math.abs(today - rDate);
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                // If it happened within the last 7 days, plot it
-                if (diffDays <= 6) {
-                    const index = 6 - diffDays; // Map to array index 0-6
-                    if (r.confidence_score >= 0.7) {
-                        verifiedHistory[index]++;
-                    } else {
-                        blockedHistory[index]++;
-                    }
-                }
-            });
-
-            // Update Trajectory Area Chart with 100% Real Data
-            trajChart.updateOptions({ xaxis: { categories: dynamicLabels } });
-            trajChart.updateSeries([
-                { name: 'Verified', data: verifiedHistory },
-                { name: 'Blocked', data: blockedHistory }
-            ]);
-            // -----------------------------------------
-
-            // Map the Table Logs
-            document.getElementById('aegis-logs').innerHTML = reviews.length === 0 ? 
-                `<tr><td colspan="3" style="padding: 60px; text-align: center; color: #a1a1a6; font-weight: 500;">No reviews found in database.</td></tr>` 
-                : reviews.map(r => {
-                const isSecure = r.confidence_score >= 0.7;
-                return `
-                <tr style="border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(0,0,0,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
-                    <td style="padding: 16px 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--apple-blue);">
-                        ${r.token ? r.token.substring(0,8) : 'PRTC-N/A'}
-                    </td>
-                    <td style="padding: 16px 24px; font-weight: 700; color: ${isSecure ? 'var(--apple-green)' : 'var(--apple-red)'}; font-size: 14px;">
-                        ${(r.confidence_score * 100).toFixed(1)}%
-                    </td>
-                    <td style="padding: 16px 24px;">
-                        <span style="padding: 4px 12px; border-radius: 980px; font-size: 10px; font-weight: 800; 
-                            background: ${isSecure ? '#e5f9e7' : '#ffeceb'}; 
-                            color: ${isSecure ? '#28a745' : '#dc3545'};">
-                            ${isSecure ? 'VERIFIED' : 'NEUTRALIZED'}
-                        </span>
-                    </td>
-                </tr>
-                `;
-            }).join('');
-
-        } catch(e) { 
-            console.error("Neural Command Sync Failure: Core Offline.", e); 
-        }
-      }
-
-      window.onload = () => { 
-          gsap.from("#app-shell", { duration: 0.8, opacity: 0, ease: "power2.out" });
-          gsap.from(".aegis-card", { duration: 0.8, y: 20, opacity: 0, stagger: 0.1, ease: "power2.out", delay: 0.2 });
-          
-          initCharts(); 
-          fetchAegisData(); 
-          setInterval(fetchAegisData, 5000); 
-      };
     </script>
   </body>
 </html>
