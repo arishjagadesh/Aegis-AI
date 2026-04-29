@@ -128,13 +128,47 @@
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px;">
           <span class="sf-display" style="font-size: 22px; font-weight: 800; color: var(--apple-text); letter-spacing: -0.5px;">Aegis Core</span>
         </div>
-        <nav>
-            <p style="font-size: 10px; color: #a1a1a6; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">Gateway Controls</p>
-            <button type="button" @click.prevent="switchTab('dashboard')" :class="activeTab === 'dashboard' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📊 Live Dashboard</button>
-            <button type="button" @click.prevent="switchTab('vault')" :class="activeTab === 'vault' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">🔐 Token Vault</button>
-            <button type="button" @click.prevent="switchTab('reports')" :class="activeTab === 'reports' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📋 Audit Reports</button>
-            <button type="button" @click.prevent="switchTab('export')" :class="activeTab === 'export' ? 'aegis-nav-active' : ''" class="aegis-nav-item w-full text-left">📥 Export Intelligence</button>
-        </nav>
+        <nav style="display: flex; flex-direction: column; gap: 4px;">
+    <p style="font-size: 10px; color: #a1a1a6; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">Gateway Controls</p>
+    
+    <button type="button" 
+        @click.prevent="switchTab('dashboard')" 
+        :class="activeTab === 'dashboard' ? 'aegis-nav-active' : ''" 
+        class="aegis-nav-item">
+        <span style="margin-right: 12px;">📊</span> Live Dashboard
+    </button>
+
+    <button type="button" 
+        @click.prevent="switchTab('vault')" 
+        :class="activeTab === 'vault' ? 'aegis-nav-active' : ''" 
+        class="aegis-nav-item">
+        <span style="margin-right: 12px;">🔐</span> Token Vault
+    </button>
+
+    <button type="button" 
+        @click.prevent="switchTab('reports')" 
+        :class="activeTab === 'reports' ? 'aegis-nav-active' : ''" 
+        class="aegis-nav-item">
+        <span style="margin-right: 12px;">📋</span> Audit Reports
+    </button>
+
+    <button type="button" 
+        @click.prevent="switchTab('export')" 
+        :class="activeTab === 'export' ? 'aegis-nav-active' : ''" 
+        class="aegis-nav-item">
+        <span style="margin-right: 12px;">📥</span> Export Intelligence
+    </button>
+
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.05);">
+        <p style="font-size: 10px; color: #a1a1a6; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; padding-left: 16px;">System</p>
+        
+        <button type="button" 
+            onclick="localStorage.removeItem('aegisAdminAuth'); window.location.href='index.html';" 
+            class="aegis-nav-item" style="color: var(--apple-red); width: 100%; text-align: left;">
+            <span style="margin-right: 12px;">🔌</span> Terminate Node
+        </button>
+    </div>
+</nav>
       </aside>
 
       <div class="aegis-content-wrapper">
